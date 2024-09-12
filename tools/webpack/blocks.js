@@ -3,26 +3,17 @@
  */
 const CopyWebpackPlugin = require( 'copy-webpack-plugin' );
 const { join, sep, basename } = require( 'path' );
-const fastGlob = require( 'fast-glob' );
 const { realpathSync } = require( 'fs' );
 
 /**
  * WordPress dependencies
  */
-const DependencyExtractionWebpackPlugin = require( '@wordpress/dependency-extraction-webpack-plugin' );
 const { PhpFilePathsPlugin } = require( '@wordpress/scripts/utils' );
 
 /**
  * Internal dependencies
  */
 const { baseConfig, plugins, stylesTransform } = require( './shared' );
-
-/*
- * Matches a block's filepaths in the form build-module/<filename>.js
- */
-const blockViewRegex = new RegExp(
-	/build-module\/(?<filename>.*\/view.*).js$/
-);
 
 /**
  * We need to automatically rename some functions when they are called inside block files,
@@ -50,6 +41,7 @@ function escapeRegExp( string ) {
 	return string.replace( /[\\^$.*+?()[\]{}|]/g, '\\$&' );
 }
 
+<<<<<<< HEAD
 const createEntrypoints = () => {
 	/*
 	 * Returns an array of paths to block view files within the `@wordpress/block-library` package.
@@ -79,19 +71,18 @@ const createEntrypoints = () => {
 	}, {} );
 };
 
+=======
+>>>>>>> ee59af9d23 (Build: Stop generating unused legacy scripts for core blocks)
 module.exports = [
 	{
 		...baseConfig,
 		name: 'blocks',
-		entry: createEntrypoints(),
+		entry: {},
 		output: {
-			devtoolNamespace: 'wp',
-			filename: './build/block-library/blocks/[name].min.js',
 			path: join( __dirname, '..', '..' ),
 		},
 		plugins: [
 			...plugins,
-			new DependencyExtractionWebpackPlugin( { injectPolyfill: false } ),
 			new PhpFilePathsPlugin( {
 				context: './packages/block-library/src/',
 				props: [ 'render', 'variations' ],
