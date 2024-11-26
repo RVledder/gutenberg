@@ -204,10 +204,35 @@ export function useScaleCanvas( {
 	} );
 
 	/**
-	 * Start the zoom out animation. This sets the necessary CSS variables
-	 * for animating the canvas and returns the Animation object.
-	 *
-	 * @return {Animation} The animation object for the zoom out animation.
+	 * Set the final zoom out state.
+	 */
+	const setZoomOutFinalState = useCallback( () => {
+		const {
+			scaleValue: nextScaleValue,
+			frameSize: nextFrameSize,
+			scrollTop: nextScrollTop,
+		} = transitionTo.current;
+
+		iframeDocument.documentElement.style.setProperty(
+			'--wp-block-editor-iframe-zoom-out-scale',
+			nextScaleValue
+		);
+		iframeDocument.documentElement.style.setProperty(
+			'--wp-block-editor-iframe-zoom-out-frame-size',
+			`${ nextFrameSize }px`
+		);
+
+		// Disable reason: Eslint isn't smart enough to know that this is a
+		// DOM element. https://github.com/facebook/react/issues/31483
+		// eslint-disable-next-line react-compiler/react-compiler
+		iframeDocument.documentElement.scrollTop = nextScrollTop;
+
+		// Update previous values.
+		transitionFrom.current = transitionTo.current;
+	}, [ iframeDocument ] );
+
+	/**
+	 * Animate to the final zoom out state.
 	 */
 	const startZoomOutAnimation = useCallback( () => {
 		const { scrollTop } = transitionFromRef.current;
@@ -225,7 +250,7 @@ export function useScaleCanvas( {
 
 		iframeDocument.documentElement.classList.add( 'zoom-out-animation' );
 
-		return iframeDocument.documentElement.animate(
+		animationRef.current = iframeDocument.documentElement.animate(
 			getAnimationKeyframes(
 				transitionFromRef.current,
 				transitionToRef.current
@@ -235,50 +260,26 @@ export function useScaleCanvas( {
 				duration: 400,
 			}
 		);
-	}, [ iframeDocument ] );
 
-	/**
-	 * Callback when the zoom out animation is finished.
-	 * - Cleans up animations refs.
-	 * - Adds final CSS vars for scale and frame size to preserve the state.
-	 * - Removes the 'zoom-out-animation' class (which has the fixed positioning).
-	 * - Sets the final scroll position after the canvas is no longer in fixed position.
-	 * - Removes CSS vars related to the animation.
-	 * - Sets the transitionFrom to the transitionTo state to be ready for the next animation.
-	 */
-	const finishZoomOutAnimation = useCallback( () => {
-		startAnimationRef.current = false;
-		animationRef.current = null;
+		animationRef.current.onfinish = () => {
+			startAnimationRef.current = false;
+			animationRef.current = null;
 
-		// Add our final scale and frame size now that the animation is done.
-		iframeDocument.documentElement.style.setProperty(
-			'--wp-block-editor-iframe-zoom-out-scale',
-			transitionToRef.current.scaleValue
-		);
-		iframeDocument.documentElement.style.setProperty(
-			'--wp-block-editor-iframe-zoom-out-frame-size',
-			`${ transitionToRef.current.frameSize }px`
-		);
+			iframeDocument.documentElement.classList.remove(
+				'zoom-out-animation'
+			);
 
-		iframeDocument.documentElement.classList.remove( 'zoom-out-animation' );
+			iframeDocument.documentElement.style.removeProperty(
+				'--wp-block-editor-iframe-zoom-out-scroll-top-next'
+			);
 
-		// Set the final scroll position that was just animated to.
-		// Disable reason: Eslint isn't smart enough to know that this is a
-		// DOM element. https://github.com/facebook/react/issues/31483
-		// eslint-disable-next-line react-compiler/react-compiler
-		iframeDocument.documentElement.scrollTop =
-			transitionToRef.current.scrollTop;
+			iframeDocument.documentElement.style.removeProperty(
+				'--wp-block-editor-iframe-zoom-out-scroll-top'
+			);
 
-		iframeDocument.documentElement.style.removeProperty(
-			'--wp-block-editor-iframe-zoom-out-scroll-top'
-		);
-		iframeDocument.documentElement.style.removeProperty(
-			'--wp-block-editor-iframe-zoom-out-scroll-top-next'
-		);
-
-		// Update previous values.
-		transitionFromRef.current = transitionToRef.current;
-	}, [ iframeDocument ] );
+			setZoomOutFinalState();
+		};
+	}, [ iframeDocument, setZoomOutFinalState ] );
 
 	/**
 	 * Runs when zoom out mode is toggled, and sets the startAnimation flag
@@ -387,10 +388,6 @@ export function useScaleCanvas( {
 				transitionFromRef.current = tempTransitionTo;
 				transitionToRef.current = tempTransitionFrom;
 			} else {
-				/**
-				 * Start a new zoom animation.
-				 */
-
 				// We can't trust the set value from contentHeight, as it was measured
 				// before the zoom out mode was changed. After zoom out mode is changed,
 				// appenders may appear or disappear, so we need to get the height from
@@ -414,13 +411,10 @@ export function useScaleCanvas( {
 					transitionToRef.current
 				);
 
-				animationRef.current = startZoomOutAnimation();
-
-				// If the user prefers reduced motion, finish the animation immediately and set the final state.
 				if ( prefersReducedMotion ) {
-					finishZoomOutAnimation();
+					setZoomOutFinalState();
 				} else {
-					animationRef.current.onfinish = finishZoomOutAnimation;
+					startZoomOutAnimation();
 				}
 			}
 		}
@@ -447,7 +441,7 @@ export function useScaleCanvas( {
 		};
 	}, [
 		startZoomOutAnimation,
-		finishZoomOutAnimation,
+		setZoomOutFinalState,
 		prefersReducedMotion,
 		isAutoScaled,
 		scaleValue,
