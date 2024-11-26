@@ -211,7 +211,7 @@ export function useScaleCanvas( {
 			scaleValue: nextScaleValue,
 			frameSize: nextFrameSize,
 			scrollTop: nextScrollTop,
-		} = transitionTo.current;
+		} = transitionToRef.current;
 
 		iframeDocument.documentElement.style.setProperty(
 			'--wp-block-editor-iframe-zoom-out-scale',
@@ -228,7 +228,7 @@ export function useScaleCanvas( {
 		iframeDocument.documentElement.scrollTop = nextScrollTop;
 
 		// Update previous values.
-		transitionFrom.current = transitionTo.current;
+		transitionFromRef.current = transitionToRef.current;
 	}, [ iframeDocument ] );
 
 	/**
@@ -281,12 +281,6 @@ export function useScaleCanvas( {
 		};
 	}, [ iframeDocument, setZoomOutFinalState ] );
 
-	/**
-	 * Runs when zoom out mode is toggled, and sets the startAnimation flag
-	 * so the animation will start when the next useEffect runs. We _only_
-	 * want to animate when the zoom out mode is toggled, not when the scale
-	 * changes due to the container resizing.
-	 */
 	useEffect( () => {
 		if ( ! iframeDocument ) {
 			return;
@@ -296,6 +290,7 @@ export function useScaleCanvas( {
 			iframeDocument.documentElement.classList.add( 'is-zoomed-out' );
 		}
 
+		// We _only_ want to animate when the zoom out mode is toggled, not when the scale changes due to the container resizing.
 		startAnimationRef.current = true;
 
 		return () => {
@@ -311,34 +306,6 @@ export function useScaleCanvas( {
 	useEffect( () => {
 		if ( ! iframeDocument ) {
 			return;
-		}
-
-		// We need to update the appropriate scale to exit from. If sidebars have been opened since setting the
-		// original scale, we will snap to a much smaller scale due to the scale container immediately changing sizes when exiting.
-		if ( isAutoScaled && transitionFromRef.current.scaleValue !== 1 ) {
-			// We use containerWidth as the divisor, as scaleContainerWidth will always match the containerWidth when
-			// exiting.
-			transitionFromRef.current.scaleValue = calculateScale( {
-				frameSize: transitionFromRef.current.frameSize,
-				containerWidth,
-				maxContainerWidth,
-				scaleContainerWidth: containerWidth,
-			} );
-		}
-
-		// If we are not going to animate the transition, set the scale and frame size directly.
-		// If we are animating, these values will be set when the animation is finished.
-		// Example: Opening sidebars that reduce the scale of the canvas, but we don't want to
-		// animate the transition.
-		if ( ! startAnimationRef.current ) {
-			iframeDocument.documentElement.style.setProperty(
-				'--wp-block-editor-iframe-zoom-out-scale',
-				scaleValue
-			);
-			iframeDocument.documentElement.style.setProperty(
-				'--wp-block-editor-iframe-zoom-out-frame-size',
-				`${ frameSize }px`
-			);
 		}
 
 		iframeDocument.documentElement.style.setProperty(
@@ -360,6 +327,19 @@ export function useScaleCanvas( {
 			'--wp-block-editor-iframe-zoom-out-scale-container-width',
 			`${ scaleContainerWidth }px`
 		);
+
+		// We need to update the appropriate scale to exit from. If sidebars have been opened since setting the
+		// original scale, we will snap to a much smaller scale due to the scale container immediately changing sizes when exiting.
+		if ( isAutoScaled && transitionFromRef.current.scaleValue !== 1 ) {
+			// We use containerWidth as the divisor, as scaleContainerWidth will always match the containerWidth when
+			// exiting.
+			transitionFromRef.current.scaleValue = calculateScale( {
+				frameSize: transitionFromRef.current.frameSize,
+				containerWidth,
+				maxContainerWidth,
+				scaleContainerWidth: containerWidth,
+			} );
+		}
 
 		/**
 		 * Handle the zoom out animation:
@@ -417,6 +397,19 @@ export function useScaleCanvas( {
 					startZoomOutAnimation();
 				}
 			}
+		} else {
+			// If we are not going to animate the transition, set the scale and frame size directly.
+			// If we are animating, these values will be set when the animation is finished.
+			// Example: Opening sidebars that reduce the scale of the canvas, but we don't want to
+			// animate the transition.
+			iframeDocument.documentElement.style.setProperty(
+				'--wp-block-editor-iframe-zoom-out-scale',
+				scaleValue
+			);
+			iframeDocument.documentElement.style.setProperty(
+				'--wp-block-editor-iframe-zoom-out-frame-size',
+				`${ frameSize }px`
+			);
 		}
 
 		return () => {
