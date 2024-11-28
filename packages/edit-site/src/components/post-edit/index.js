@@ -18,9 +18,10 @@ import { privateApis as editorPrivateApis } from '@wordpress/editor';
  * Internal dependencies
  */
 import Page from '../page';
+import PostEditHeader from '../post-edit-header';
 import { unlock } from '../../lock-unlock';
 
-const { PostCardPanel, usePostFields } = unlock( editorPrivateApis );
+const { usePostFields } = unlock( editorPrivateApis );
 
 const fieldsWithBulkEditSupport = [
 	'title',
@@ -125,9 +126,7 @@ function PostEditForm( { postType, postId } ) {
 
 	return (
 		<VStack spacing={ 4 }>
-			{ ids.length === 1 && (
-				<PostCardPanel postType={ postType } postId={ ids[ 0 ] } />
-			) }
+			<PostEditHeader postType={ postType } postId={ postId } />
 			<DataForm
 				data={ ids.length === 1 ? record : multiEdits }
 				fields={ fields }
