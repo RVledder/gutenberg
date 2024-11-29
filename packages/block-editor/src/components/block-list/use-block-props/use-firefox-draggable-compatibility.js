@@ -14,7 +14,18 @@ import { useRefEffect } from '@wordpress/compose';
 export function useFirefoxDraggableCompatibility() {
 	return useRefEffect( ( node ) => {
 		function onDown( event ) {
-			node.draggable = ! event.target.isContentEditable;
+			if ( node.draggable === true ) {
+				if ( event.target.isContentEditable ) {
+					node.draggable = false;
+					node.setAttribute( 'data-draggable', 'true' );
+				}
+			} else if (
+				! event.target.isContentEditable &&
+				node.getAttribute( 'data-draggable' ) === 'true'
+			) {
+				node.draggable = true;
+				node.removeAttribute( 'data-draggable' );
+			}
 		}
 		const { ownerDocument } = node;
 		ownerDocument.addEventListener( 'pointerdown', onDown );
