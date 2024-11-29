@@ -17,10 +17,6 @@ export interface MenuContext {
 
 export interface MenuProps {
 	/**
-	 * The button triggering the menu popover.
-	 */
-	trigger: React.ReactElement;
-	/**
 	 * The contents of the menu (ie. one or more menu items).
 	 */
 	children?: React.ReactNode;
@@ -41,6 +37,19 @@ export interface MenuProps {
 	 */
 	onOpenChange?: ( open: boolean ) => void;
 	/**
+	 * The placement of the menu popover.
+	 *
+	 * @default 'bottom-start' for root-level menus, 'right-start' for nested menus
+	 */
+	placement?: Placement;
+}
+
+export interface MenuPopoverProps {
+	/**
+	 * The contents of the dropdown.
+	 */
+	children?: React.ReactNode;
+	/**
 	 * The modality of the menu popover. When set to true, interaction with
 	 * outside elements will be disabled and only menu content will be visible to
 	 * screen readers.
@@ -48,12 +57,6 @@ export interface MenuProps {
 	 * @default true
 	 */
 	modal?: boolean;
-	/**
-	 * The placement of the menu popover.
-	 *
-	 * @default 'bottom-start' for root-level menus, 'right-start' for nested menus
-	 */
-	placement?: Placement;
 	/**
 	 * The distance between the popover and the anchor element.
 	 *
@@ -79,6 +82,17 @@ export interface MenuProps {
 				event: KeyboardEvent | React.KeyboardEvent< Element >
 		  ) => boolean );
 }
+
+export interface MenuTriggerButtonProps {
+	/**
+	 * The contents of the menu trigger button.
+	 */
+	children?: React.ReactNode;
+
+	render?: Ariakit.MenuButtonProps[ 'render' ];
+}
+
+export interface MenuSubmenuTriggerItemProps extends MenuItemProps {}
 
 export interface MenuGroupProps {
 	/**
