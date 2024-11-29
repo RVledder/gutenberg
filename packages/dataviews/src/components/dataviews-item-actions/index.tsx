@@ -66,7 +66,7 @@ interface PrimaryActionsProps< Item > {
 	registry: ReturnType< typeof useRegistry >;
 }
 
-function ButtonTrigger< Item >( {
+function ActionButtonTrigger< Item >( {
 	action,
 	onClick,
 	items,
@@ -84,7 +84,7 @@ function ButtonTrigger< Item >( {
 	);
 }
 
-function MenuItemTrigger< Item >( {
+function ActionMenuItemTrigger< Item >( {
 	action,
 	onClick,
 	items,
@@ -167,12 +167,12 @@ export function ActionsMenuGroup< Item >( {
 							key={ action.id }
 							action={ action }
 							items={ [ item ] }
-							ActionTrigger={ MenuItemTrigger }
+							ActionTrigger={ ActionMenuItemTrigger }
 						/>
 					);
 				}
 				return (
-					<MenuItemTrigger
+					<ActionMenuItemTrigger
 						key={ action.id }
 						action={ action }
 						onClick={ () => {
@@ -260,20 +260,22 @@ function CompactItemActions< Item >( {
 	isSmall,
 }: CompactItemActionsProps< Item > ) {
 	return (
-		<Menu
-			trigger={
-				<Button
-					size={ isSmall ? 'small' : 'compact' }
-					icon={ moreVertical }
-					label={ __( 'Actions' ) }
-					accessibleWhenDisabled
-					disabled={ ! actions.length }
-					className="dataviews-all-actions-button"
-				/>
-			}
-			placement="bottom-end"
-		>
-			<ActionsMenuGroup actions={ actions } item={ item } />
+		<Menu placement="bottom-end">
+			<Menu.TriggerButton
+				render={
+					<Button
+						size={ isSmall ? 'small' : 'compact' }
+						icon={ moreVertical }
+						label={ __( 'Actions' ) }
+						accessibleWhenDisabled
+						disabled={ ! actions.length }
+						className="dataviews-all-actions-button"
+					/>
+				}
+			/>
+			<Menu.Popover>
+				<ActionsMenuGroup actions={ actions } item={ item } />
+			</Menu.Popover>
 		</Menu>
 	);
 }
@@ -294,12 +296,12 @@ function PrimaryActions< Item >( {
 					key={ action.id }
 					action={ action }
 					items={ [ item ] }
-					ActionTrigger={ ButtonTrigger }
+					ActionTrigger={ ActionButtonTrigger }
 				/>
 			);
 		}
 		return (
-			<ButtonTrigger
+			<ActionButtonTrigger
 				key={ action.id }
 				action={ action }
 				onClick={ () => {
