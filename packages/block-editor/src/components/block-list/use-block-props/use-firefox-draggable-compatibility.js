@@ -16,9 +16,25 @@ class NodeSet extends Set {
 		}
 		return super.add( node );
 	}
+	delete( node ) {
+		restore( node );
+		return super.delete( node );
+	}
 }
 
 const nodes = new NodeSet();
+
+function restore( node ) {
+	const prevDraggable = node.getAttribute( 'data-draggable' );
+	if ( prevDraggable ) {
+		node.removeAttribute( 'data-draggable' );
+		// Only restore if `draggable` is still removed. It could have been
+		// changed by React in the meantime.
+		if ( prevDraggable === 'true' && ! node.getAttribute( 'draggable' ) ) {
+			node.setAttribute( 'draggable', 'true' );
+		}
+	}
+}
 
 function down( event ) {
 	if ( event.target.isContentEditable ) {
@@ -29,7 +45,7 @@ function down( event ) {
 				node.getAttribute( 'draggable' ) === 'true' &&
 				node.contains( event.target )
 			) {
-				node.setAttribute( 'draggable', 'false' );
+				node.removeAttribute( 'draggable' );
 				node.setAttribute( 'data-draggable', 'true' );
 			}
 		}
@@ -37,10 +53,7 @@ function down( event ) {
 		// Whenever a non-editable element is clicked, re-enable draggability
 		// for any blocks that were previously disabled.
 		for ( const node of nodes ) {
-			if ( node.getAttribute( 'data-draggable' ) === 'true' ) {
-				node.setAttribute( 'draggable', 'true' );
-				node.removeAttribute( 'data-draggable' );
-			}
+			restore( node );
 		}
 	}
 }
