@@ -38,24 +38,12 @@ const EMPTY_ARRAY = [];
 
 const defaultLayouts = {
 	[ LAYOUT_TABLE ]: {
-		fields: [ 'template', 'author' ],
+		mediaField: 'preview',
 		layout: {
-			primaryField: 'title',
-			combinedFields: [
-				{
-					id: 'template',
-					label: __( 'Template' ),
-					children: [ 'title', 'description' ],
-					direction: 'vertical',
-				},
-			],
 			styles: {
-				template: {
+				__primary: {
 					maxWidth: 400,
 					minWidth: 320,
-				},
-				preview: {
-					width: '1%',
 				},
 				author: {
 					width: '1%',
@@ -64,18 +52,12 @@ const defaultLayouts = {
 		},
 	},
 	[ LAYOUT_GRID ]: {
-		fields: [ 'title', 'description', 'author' ],
-		layout: {
-			mediaField: 'preview',
-			primaryField: 'title',
-			columnFields: [ 'description' ],
-		},
+		mediaField: 'preview',
+		layout: {},
 	},
 	[ LAYOUT_LIST ]: {
-		fields: [ 'title', 'description', 'author' ],
-		layout: {
-			primaryField: 'title',
-		},
+		mediaField: undefined,
+		layout: {},
 	},
 };
 
@@ -88,9 +70,11 @@ const DEFAULT_VIEW = {
 		field: 'title',
 		direction: 'asc',
 	},
-	fields: defaultLayouts[ LAYOUT_GRID ].fields,
-	layout: defaultLayouts[ LAYOUT_GRID ].layout,
+	titleField: 'title',
+	descriptionField: 'description',
+	fields: [ 'author' ],
 	filters: [],
+	...defaultLayouts[ LAYOUT_GRID ],
 };
 
 export default function PageTemplates() {
@@ -103,8 +87,6 @@ export default function PageTemplates() {
 		return {
 			...DEFAULT_VIEW,
 			type: usedType,
-			layout: defaultLayouts[ usedType ].layout,
-			fields: defaultLayouts[ usedType ].fields,
 			filters:
 				activeView !== 'all'
 					? [
@@ -115,6 +97,7 @@ export default function PageTemplates() {
 							},
 					  ]
 					: [],
+			...defaultLayouts[ usedType ],
 		};
 	}, [ layout, activeView ] );
 	const [ view, setView ] = useState( defaultView );
