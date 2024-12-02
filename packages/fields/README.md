@@ -79,6 +79,10 @@ Undocumented declaration.
 
 Undocumented declaration.
 
+### pageTitleField
+
+Undocumented declaration.
+
 ### parentField
 
 This field is used to display the post parent.
@@ -86,6 +90,10 @@ This field is used to display the post parent.
 ### passwordField
 
 This field is used to display the post password.
+
+### patternTitleField
+
+Undocumented declaration.
 
 ### permanentlyDeletePost
 
