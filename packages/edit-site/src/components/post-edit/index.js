@@ -18,7 +18,7 @@ import { privateApis as editorPrivateApis } from '@wordpress/editor';
  * Internal dependencies
  */
 import Page from '../page';
-import PostEditHeader from '../post-edit-header';
+import PostEditHeader from '../post-edit/header';
 import { unlock } from '../../lock-unlock';
 
 const { usePostFields } = unlock( editorPrivateApis );
