@@ -3,26 +3,29 @@
  */
 import { useRefEffect } from '@wordpress/compose';
 
-class NodeSet extends Set {
-	constructor() {
-		super();
-		this.documents = new Set();
+const nodesByDocument = new Map();
+
+function add( doc, node ) {
+	let set = nodesByDocument.get( doc );
+	if ( ! set ) {
+		set = new Set();
+		nodesByDocument.set( doc, set );
+		doc.addEventListener( 'pointerdown', down );
 	}
-	add( node ) {
-		const { ownerDocument } = node;
-		if ( ! this.documents.has( ownerDocument ) ) {
-			ownerDocument.addEventListener( 'pointerdown', down );
-			this.documents.add( ownerDocument );
-		}
-		return super.add( node );
-	}
-	delete( node ) {
-		restore( node );
-		return super.delete( node );
-	}
+	set.add( node );
 }
 
-const nodes = new NodeSet();
+function remove( doc, node ) {
+	const set = nodesByDocument.get( doc );
+	if ( set ) {
+		set.delete( node );
+		restore( node );
+		if ( set.size === 0 ) {
+			nodesByDocument.delete( doc );
+			doc.removeEventListener( 'pointerdown', down );
+		}
+	}
+}
 
 function restore( node ) {
 	const prevDraggable = node.getAttribute( 'data-draggable' );
@@ -37,13 +40,17 @@ function restore( node ) {
 }
 
 function down( event ) {
-	if ( event.target.isContentEditable ) {
+	const { target } = event;
+	const { ownerDocument, isContentEditable } = target;
+	const nodes = nodesByDocument.get( ownerDocument );
+
+	if ( isContentEditable ) {
 		// Whenever an editable element is clicked, check which draggable
 		// blocks contain this element, and temporarily disable draggability.
 		for ( const node of nodes ) {
 			if (
 				node.getAttribute( 'draggable' ) === 'true' &&
-				node.contains( event.target )
+				node.contains( target )
 			) {
 				node.removeAttribute( 'draggable' );
 				node.setAttribute( 'data-draggable', 'true' );
@@ -68,9 +75,9 @@ function down( event ) {
  */
 export function useFirefoxDraggableCompatibility() {
 	return useRefEffect( ( node ) => {
-		nodes.add( node );
+		add( node.ownerDocument, node );
 		return () => {
-			nodes.delete( node );
+			remove( node.ownerDocument, node );
 		};
 	}, [] );
 }
