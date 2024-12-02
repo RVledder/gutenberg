@@ -38,7 +38,6 @@ export const MenuTriggerButton = forwardRef<
 			ref={ ref }
 			{ ...props }
 			disabled={ disabled }
-			accessibleWhenDisabled
 			store={ menuContext.store }
 		>
 			{ children }
