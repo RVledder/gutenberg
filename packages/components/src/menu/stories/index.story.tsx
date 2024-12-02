@@ -221,7 +221,6 @@ export const WithCheckboxes: StoryFn< typeof Menu > = ( props ) => {
 						value="a"
 						checked={ isAChecked }
 						onChange={ ( e ) => {
-							console.log( e.target.checked );
 							setAChecked( e.target.checked );
 						} }
 					>
