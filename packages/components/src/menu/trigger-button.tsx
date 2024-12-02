@@ -18,7 +18,7 @@ import { MenuContext } from './context';
 export const MenuTriggerButton = forwardRef<
 	HTMLDivElement,
 	WordPressComponentProps< MenuTriggerButtonProps, 'button', false >
->( function MenuTriggerButton( { children, ...props }, ref ) {
+>( function MenuTriggerButton( { children, disabled = false, ...props }, ref ) {
 	const menuContext = useContext( MenuContext );
 
 	if ( ! menuContext?.store ) {
@@ -37,6 +37,7 @@ export const MenuTriggerButton = forwardRef<
 		<Ariakit.MenuButton
 			ref={ ref }
 			{ ...props }
+			disabled={ disabled }
 			accessibleWhenDisabled
 			store={ menuContext.store }
 		>

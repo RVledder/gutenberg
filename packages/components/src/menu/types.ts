@@ -88,8 +88,43 @@ export interface MenuTriggerButtonProps {
 	 * The contents of the menu trigger button.
 	 */
 	children?: React.ReactNode;
-
+	/**
+	 * Allows the component to be rendered as a different HTML element or React
+	 * component. The value can be a React element or a function that takes in the
+	 * original component props and gives back a React element with the props
+	 * merged.
+	 */
 	render?: Ariakit.MenuButtonProps[ 'render' ];
+	/**
+	 * Determines if the element is disabled. This sets the `aria-disabled`
+	 * attribute accordingly, enabling support for all elements, including those
+	 * that don't support the native `disabled` attribute.
+	 *
+	 * This feature can be combined with the `accessibleWhenDisabled` prop to
+	 * make disabled elements still accessible via keyboard.
+	 *
+	 * **Note**: For this prop to work, the `focusable` prop must be set to
+	 * `true`, if it's not set by default.
+	 *
+	 * @default false
+	 */
+	disabled?: Ariakit.MenuButtonProps[ 'disabled' ];
+	/**
+	 * Indicates whether the element should be focusable even when it is
+	 * `disabled`.
+	 *
+	 * This is important when discoverability is a concern. For example:
+	 *
+	 * > A toolbar in an editor contains a set of special smart paste functions
+	 * that are disabled when the clipboard is empty or when the function is not
+	 * applicable to the current content of the clipboard. It could be helpful to
+	 * keep the disabled buttons focusable if the ability to discover their
+	 * functionality is primarily via their presence on the toolbar.
+	 *
+	 * Learn more on [Focusability of disabled
+	 * controls](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#focusabilityofdisabledcontrols).
+	 */
+	accessibleWhenDisabled?: Ariakit.MenuButtonProps[ 'accessibleWhenDisabled' ];
 }
 
 export interface MenuSubmenuTriggerItemProps extends MenuItemProps {}
@@ -132,8 +167,15 @@ export interface MenuItemProps {
 	 * Determines if the element is disabled.
 	 */
 	disabled?: boolean;
+	/**
+	 * Allows the component to be rendered as a different HTML element or React
+	 * component. The value can be a React element or a function that takes in the
+	 * original component props and gives back a React element with the props
+	 * merged.
+	 */
 	render?: Ariakit.MenuItemProps[ 'render' ];
 	/**
+	 * The ariakit store. This prop is only meant for internal use.
 	 * @ignore
 	 */
 	store?: Ariakit.MenuItemProps[ 'store' ];
