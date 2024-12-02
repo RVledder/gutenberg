@@ -222,8 +222,8 @@ function Iframe( {
 		isZoomedOut,
 		scaleContainerWidth,
 	} = useScaleCanvas( {
-		scale,
-		frameSize: parseInt( frameSize ),
+		scaleProp: scale,
+		frameSizeProp: frameSize,
 		iframeDocument,
 	} );
 

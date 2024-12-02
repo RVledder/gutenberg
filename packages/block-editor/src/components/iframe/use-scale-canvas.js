@@ -6,7 +6,7 @@ import { useReducedMotion, useResizeObserver } from '@wordpress/compose';
 
 /**
  * @typedef {Object} TransitionState
- * @property {number} scaleValue   Scale of the canvas.
+ * @property {number} scale        Scale of the canvas.
  * @property {number} frameSize    Size of the frame/offset around the canvas.
  * @property {number} clientHeight ClientHeight of the iframe.
  * @property {number} scrollTop    ScrollTop of the iframe.
@@ -46,11 +46,11 @@ function computeScrollTopNext( transitionFrom, transitionTo ) {
 	const {
 		clientHeight: prevClientHeight,
 		frameSize: prevFrameSize,
-		scaleValue: prevScale,
+		scale: prevScale,
 		scrollTop,
 		scrollHeight,
 	} = transitionFrom;
-	const { clientHeight, frameSize, scaleValue } = transitionTo;
+	const { clientHeight, frameSize, scale } = transitionTo;
 	// Step 0: Start with the current scrollTop.
 	let scrollTopNext = scrollTop;
 	// Step 1: Undo the effects of the previous scale and frame around the
@@ -62,7 +62,7 @@ function computeScrollTopNext( transitionFrom, transitionTo ) {
 	// Step 2: Apply the new scale and frame around the midpoint of the
 	// visible area.
 	scrollTopNext =
-		( scrollTopNext + clientHeight / 2 ) * scaleValue +
+		( scrollTopNext + clientHeight / 2 ) * scale +
 		frameSize -
 		clientHeight / 2;
 
@@ -76,9 +76,7 @@ function computeScrollTopNext( transitionFrom, transitionTo ) {
 	// iframe. We can't just let the browser handle it because we need to
 	// animate the scaling.
 	const maxScrollTop =
-		scrollHeight * ( scaleValue / prevScale ) +
-		frameSize * 2 -
-		clientHeight;
+		scrollHeight * ( scale / prevScale ) + frameSize * 2 - clientHeight;
 
 	// Step 4: Clamp the scrollTopNext between the minimum and maximum
 	// possible scrollTop positions. Round the value to avoid subpixel
@@ -97,11 +95,11 @@ function computeScrollTopNext( transitionFrom, transitionTo ) {
  */
 function getAnimationKeyframes( transitionFrom, transitionTo ) {
 	const {
-		scaleValue: prevScale,
+		scale: prevScale,
 		frameSize: prevFrameSize,
-		scrollTop,
+		scrollTop: prevScrollTop,
 	} = transitionFrom;
-	const { scaleValue, frameSize, scrollTop: scrollTopNext } = transitionTo;
+	const { scale, frameSize, scrollTop } = transitionTo;
 
 	return [
 		{
@@ -111,10 +109,10 @@ function getAnimationKeyframes( transitionFrom, transitionTo ) {
 			paddingBottom: `${ prevFrameSize / prevScale }px`,
 		},
 		{
-			translate: `0 ${ scrollTop - scrollTopNext }px`,
-			scale: scaleValue,
-			paddingTop: `${ frameSize / scaleValue }px`,
-			paddingBottom: `${ frameSize / scaleValue }px`,
+			translate: `0 ${ prevScrollTop - scrollTop }px`,
+			scale,
+			paddingTop: `${ frameSize / scale }px`,
+			paddingBottom: `${ frameSize / scale }px`,
 		},
 	];
 }
@@ -132,60 +130,51 @@ function getAnimationKeyframes( transitionFrom, transitionTo ) {
  * the states.
  *
  * @param {Object}        options                   Object of options.
- * @param {number}        options.frameSize         Size of the frame around the content.
+ * @param {number}        options.frameSizeProp     Size of the frame around the content.
  * @param {Document}      options.iframeDocument    Document of the iframe.
  * @param {number}        options.maxContainerWidth Max width of the canvas to use as the starting scale point. Defaults to 750.
- * @param {number|string} options.scale             Scale of the canvas. Can be an decimal between 0 and 1, 1, or 'auto-scaled'.
+ * @param {number|string} options.scaleProp         Scale of the canvas. Can be an decimal between 0 and 1, 1, or 'auto-scaled'.
  * @return {ScaleCanvasResult} Properties of the result.
  */
 export function useScaleCanvas( {
-	frameSize,
+	frameSizeProp,
 	iframeDocument,
 	maxContainerWidth = 750,
-	scale,
+	scaleProp,
 } ) {
 	const [ contentResizeListener, { height: contentHeight } ] =
 		useResizeObserver();
 	const [ containerResizeListener, { width: containerWidth } ] =
 		useResizeObserver();
+	const prefersReducedMotion = useReducedMotion();
 
 	const initialContainerWidthRef = useRef( 0 );
-	const isZoomedOut = scale !== 1;
-	const prefersReducedMotion = useReducedMotion();
-	const isAutoScaled = scale === 'auto-scaled';
+
 	// Track if the animation should start when the useEffect runs.
 	const startAnimationRef = useRef( false );
+
 	// Track the animation so we know if we have an animation running,
 	// and can cancel it, reverse it, call a finish event, etc.
 	const animationRef = useRef( null );
 
 	useEffect( () => {
-		if ( ! isZoomedOut ) {
+		if ( scaleProp === 1 ) {
 			initialContainerWidthRef.current = containerWidth;
 		}
-	}, [ containerWidth, isZoomedOut ] );
+	}, [ containerWidth, scaleProp ] );
 
 	const scaleContainerWidth = Math.max(
 		initialContainerWidthRef.current,
 		containerWidth
 	);
 
-	const scaleValue = isAutoScaled
-		? calculateScale( {
-				frameSize,
-				containerWidth,
-				maxContainerWidth,
-				scaleContainerWidth,
-		  } )
-		: scale;
-
 	/**
 	 * The starting transition state for the zoom out animation.
 	 * @type {import('react').RefObject<TransitionState>}
 	 */
 	const transitionFromRef = useRef( {
-		scaleValue,
-		frameSize,
+		scale: 1,
+		frameSize: 0,
 		clientHeight: 0,
 		scrollTop: 0,
 		scrollHeight: 0,
@@ -196,8 +185,8 @@ export function useScaleCanvas( {
 	 * @type {import('react').RefObject<TransitionState>}
 	 */
 	const transitionToRef = useRef( {
-		scaleValue,
-		frameSize,
+		scale: 1,
+		frameSize: 0,
 		clientHeight: 0,
 		scrollTop: 0,
 		scrollHeight: 0,
@@ -229,12 +218,30 @@ export function useScaleCanvas( {
 
 		// Update previous values.
 		transitionFromRef.current = transitionToRef.current;
+
+		// Don't allow a new transition to start again unless it was started by the zoom out mode changing.
+		startAnimationRef.current = false;
 	}, [ iframeDocument ] );
 
 	/**
 	 * Animate to the final zoom out state.
 	 */
-	const startZoomOutAnimation = useCallback( () => {
+	const handleZoomOutAnimation = useCallback( () => {
+		// If we already have an animation running, reverse it.
+		if ( animationRef.current ) {
+			animationRef.current.reverse();
+
+			// Swap the transition to/from refs so that we set the correct values when
+			// setZoomOutFinalState runs.
+			const tempTransitionFrom = transitionFromRef.current;
+			const tempTransitionTo = transitionToRef.current;
+			transitionFromRef.current = tempTransitionTo;
+			transitionToRef.current = tempTransitionFrom;
+
+			setZoomOutFinalState();
+			return;
+		}
+
 		const { scrollTop } = transitionFromRef.current;
 		const { scrollTop: scrollTopNext } = transitionToRef.current;
 
@@ -262,7 +269,6 @@ export function useScaleCanvas( {
 		);
 
 		animationRef.current.onfinish = () => {
-			startAnimationRef.current = false;
 			animationRef.current = null;
 
 			iframeDocument.documentElement.classList.remove(
@@ -286,7 +292,7 @@ export function useScaleCanvas( {
 			return;
 		}
 
-		if ( isZoomedOut ) {
+		if ( scaleProp !== 1 ) {
 			iframeDocument.documentElement.classList.add( 'is-zoomed-out' );
 		}
 
@@ -296,7 +302,7 @@ export function useScaleCanvas( {
 		return () => {
 			iframeDocument.documentElement.classList.remove( 'is-zoomed-out' );
 		};
-	}, [ iframeDocument, isZoomedOut ] );
+	}, [ iframeDocument, scaleProp ] );
 
 	/**
 	 * This handles:
@@ -307,6 +313,18 @@ export function useScaleCanvas( {
 		if ( ! iframeDocument ) {
 			return;
 		}
+
+		const frameSize = parseInt( frameSizeProp, 10 );
+
+		const scale =
+			scaleProp === 'auto-scaled'
+				? calculateScale( {
+						frameSize,
+						containerWidth,
+						maxContainerWidth,
+						scaleContainerWidth,
+				  } )
+				: scaleProp;
 
 		iframeDocument.documentElement.style.setProperty(
 			'--wp-block-editor-iframe-zoom-out-content-height',
@@ -330,10 +348,13 @@ export function useScaleCanvas( {
 
 		// We need to update the appropriate scale to exit from. If sidebars have been opened since setting the
 		// original scale, we will snap to a much smaller scale due to the scale container immediately changing sizes when exiting.
-		if ( isAutoScaled && transitionFromRef.current.scaleValue !== 1 ) {
+		if (
+			scaleProp === 'auto-scaled' &&
+			transitionFromRef.current.scale !== 1
+		) {
 			// We use containerWidth as the divisor, as scaleContainerWidth will always match the containerWidth when
 			// exiting.
-			transitionFromRef.current.scaleValue = calculateScale( {
+			transitionFromRef.current.scale = calculateScale( {
 				frameSize: transitionFromRef.current.frameSize,
 				containerWidth,
 				maxContainerWidth,
@@ -353,49 +374,33 @@ export function useScaleCanvas( {
 		 *   and set the scroll position that keeps everything centered.
 		 */
 		if ( startAnimationRef.current ) {
-			// Don't allow a new transition to start again unless it was started by the zoom out mode changing.
-			startAnimationRef.current = false;
+			// We can't trust the set value from contentHeight, as it was measured
+			// before the zoom out mode was changed. After zoom out mode is changed,
+			// appenders may appear or disappear, so we need to get the height from
+			// the iframe at this point when we're about to animate the zoom out.
+			// The iframe scrollTop, scrollHeight, and clientHeight will all be
+			// the most accurate.
+			transitionFromRef.current.clientHeight =
+				transitionFromRef.current.clientHeight ?? clientHeight;
+			transitionFromRef.current.scrollTop =
+				iframeDocument.documentElement.scrollTop;
+			transitionFromRef.current.scrollHeight =
+				iframeDocument.documentElement.scrollHeight;
 
-			/**
-			 * If we already have an animation running, reverse it.
-			 */
-			if ( animationRef.current ) {
-				animationRef.current.reverse();
-				// Swap the transition to/from refs so that we set the correct values when
-				// finishZoomOutAnimation runs.
-				const tempTransitionFrom = transitionFromRef.current;
-				const tempTransitionTo = transitionToRef.current;
-				transitionFromRef.current = tempTransitionTo;
-				transitionToRef.current = tempTransitionFrom;
+			transitionToRef.current = {
+				scaleValue: scale,
+				frameSize,
+				clientHeight,
+			};
+			transitionToRef.current.scrollTop = computeScrollTopNext(
+				transitionFromRef.current,
+				transitionToRef.current
+			);
+
+			if ( prefersReducedMotion ) {
+				setZoomOutFinalState();
 			} else {
-				// We can't trust the set value from contentHeight, as it was measured
-				// before the zoom out mode was changed. After zoom out mode is changed,
-				// appenders may appear or disappear, so we need to get the height from
-				// the iframe at this point when we're about to animate the zoom out.
-				// The iframe scrollTop, scrollHeight, and clientHeight will all be
-				// the most accurate.
-				transitionFromRef.current.clientHeight =
-					transitionFromRef.current.clientHeight ?? clientHeight;
-				transitionFromRef.current.scrollTop =
-					iframeDocument.documentElement.scrollTop;
-				transitionFromRef.current.scrollHeight =
-					iframeDocument.documentElement.scrollHeight;
-
-				transitionToRef.current = {
-					scaleValue,
-					frameSize,
-					clientHeight,
-				};
-				transitionToRef.current.scrollTop = computeScrollTopNext(
-					transitionFromRef.current,
-					transitionToRef.current
-				);
-
-				if ( prefersReducedMotion ) {
-					setZoomOutFinalState();
-				} else {
-					startZoomOutAnimation();
-				}
+				handleZoomOutAnimation();
 			}
 		} else {
 			// If we are not going to animate the transition, set the scale and frame size directly.
@@ -404,7 +409,7 @@ export function useScaleCanvas( {
 			// animate the transition.
 			iframeDocument.documentElement.style.setProperty(
 				'--wp-block-editor-iframe-zoom-out-scale',
-				scaleValue
+				scale
 			);
 			iframeDocument.documentElement.style.setProperty(
 				'--wp-block-editor-iframe-zoom-out-frame-size',
@@ -433,12 +438,11 @@ export function useScaleCanvas( {
 			);
 		};
 	}, [
-		startZoomOutAnimation,
+		scaleProp,
+		frameSizeProp,
+		handleZoomOutAnimation,
 		setZoomOutFinalState,
 		prefersReducedMotion,
-		isAutoScaled,
-		scaleValue,
-		frameSize,
 		iframeDocument,
 		contentHeight,
 		containerWidth,
@@ -447,7 +451,7 @@ export function useScaleCanvas( {
 	] );
 
 	return {
-		isZoomedOut,
+		isZoomedOut: scaleProp !== 1,
 		scaleContainerWidth,
 		contentResizeListener,
 		containerResizeListener,
