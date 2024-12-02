@@ -41,38 +41,6 @@ function escapeRegExp( string ) {
 	return string.replace( /[\\^$.*+?()[\]{}|]/g, '\\$&' );
 }
 
-<<<<<<< HEAD
-const createEntrypoints = () => {
-	/*
-	 * Returns an array of paths to block view files within the `@wordpress/block-library` package.
-	 * These paths can be matched by the regex `blockViewRegex` in order to extract
-	 * the block's filename. All blocks were migrated to script modules but the Form block.
-	 *
-	 * Returns an empty array if no files were found.
-	 */
-	const blockViewScriptPaths = fastGlob.sync(
-		'./packages/block-library/build-module/form/view.js'
-	);
-
-	/*
-	 * Go through the paths found above, in order to define webpack entry points for
-	 * each block's view.js file.
-	 */
-	return blockViewScriptPaths.reduce( ( entries, scriptPath ) => {
-		const result = scriptPath.match( blockViewRegex );
-		if ( ! result?.groups?.filename ) {
-			return entries;
-		}
-
-		return {
-			...entries,
-			[ result.groups.filename ]: scriptPath,
-		};
-	}, {} );
-};
-
-=======
->>>>>>> ee59af9d23 (Build: Stop generating unused legacy scripts for core blocks)
 module.exports = [
 	{
 		...baseConfig,
