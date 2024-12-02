@@ -746,15 +746,14 @@ When using region-based navigation, it's crucial to ensure that your interactive
 `getServerState()` allows you to subscribe to changes in the **global state** that occur during client-side navigation. This function is analogous to `getServerContext()`, but it works with the global state instead of the local context.
 
 The `getServerState()` function returns a read-only reactive object. This means that any [callbacks](/docs/reference-guides/interactivity-api/api-reference.md#accessing-data-in-callbacks) you have defined that watch the returned object will only trigger when the value returned by the function changes. If the value remains the same, the callback will not re-trigger.
+
 Let's consider a quiz that has multiple questions. Each question is a separate page. When the user navigates to a new question, the server provides the new question and the time left to answer all the questions.
 
 ```php
-<?php
-wp_interactivity_state( 'myPlugin', array(
+<div <?php echo wp_interactivity_state( 'myPlugin', array(
 	'question' => get_question_for_page( get_the_ID() ),
 	'timeLeft' => 5 * 60, // Time to answer all the questions.
-) );
-?>
+) ); ?>>
 ```
 
 ```javascript
@@ -795,11 +794,9 @@ The `getServerContext()` function returns a read-only reactive object. This mean
 Consider a quiz that has multiple questions. Each question is a separate page. When the user navigates to a new question, the server provides the new question and the time left to answer all the questions.
 
 ```php
-<?php
-wp_interactivity_context( 'myPlugin', array(
+<div <?php echo wp_interactivity_data_wp_context( 'myPlugin', array(
 	'currentQuestion' => get_question_for_page( get_the_ID() ),
-) );
-?>
+) ); ?>>
 ```
 
 ```javascript
