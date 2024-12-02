@@ -830,7 +830,7 @@ store( 'myPlugin', {
 
 ### When to Use
 
-Whenever you have interactive blocks that rely on global state that may change due to navigation events, ensuring consistency across different parts of your application.
+Whenever you have interactive blocks that rely on global state or local context that may change due to navigation events, ensuring consistency across different parts of your application.
 
 ### Best Practices for using `getServerState()` and `getServerContext()`
 
