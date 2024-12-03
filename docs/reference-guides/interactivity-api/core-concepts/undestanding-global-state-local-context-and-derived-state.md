@@ -750,10 +750,10 @@ The `getServerState()` function returns a read-only reactive object. This means 
 Let's consider a quiz that has multiple questions. Each question is a separate page. When the user navigates to a new question, the server provides the new question and the time left to answer all the questions.
 
 ```php
-<div <?php echo wp_interactivity_data_wp_context( array(
+<div <?php echo wp_interactivity_state( 'myPlugin', array(
 	'question' => get_question_for_page( get_the_ID() ),
 	'timeLeft' => 5 * 60, // Time to answer all the questions.
-), 'myPlugin' ); ?>>
+) ); ?>>
 ```
 
 ```javascript
@@ -796,7 +796,7 @@ Consider a quiz that has multiple questions. Each question is a separate page. W
 ```php
 <div <?php echo wp_interactivity_data_wp_context( array(
 	'currentQuestion' => get_question_for_page( get_the_ID() ),
-), 'myPlugin' ); ?>>
+), ); ?>>
 ```
 
 ```javascript
