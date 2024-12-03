@@ -12,7 +12,7 @@ import { useState, useMemo } from '@wordpress/element';
 import { comment as commentIcon } from '@wordpress/icons';
 import { addFilter } from '@wordpress/hooks';
 import { store as noticesStore } from '@wordpress/notices';
-import { store as coreStore } from '@wordpress/core-data';
+import { store as coreStore, useEntityBlockEditor } from '@wordpress/core-data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { store as interfaceStore } from '@wordpress/interface';
 
@@ -220,8 +220,11 @@ export default function CollabSidebar() {
 	const { enableComplementaryArea } = useDispatch( interfaceStore );
 	const { getActiveComplementaryArea } = useSelect( interfaceStore );
 
-	const { postStatus } = useSelect( ( select ) => {
+	const { postId, postType, postStatus } = useSelect( ( select ) => {
+		const { getCurrentPostId, getCurrentPostType } = select( editorStore );
 		return {
+			postId: getCurrentPostId(),
+			postType: getCurrentPostType(),
 			postStatus:
 				select( editorStore ).getEditedPostAttribute( 'status' ),
 		};
@@ -262,8 +265,37 @@ export default function CollabSidebar() {
 		};
 	}, [] );
 
+	const [ blocks ] = useEntityBlockEditor( 'postType', postType, {
+		id: postId,
+	} );
+
+	const getCommentIdsFromBlocks = () => {
+		// Recursive function to extract comment IDs from blocks
+		const extractCommentIds = ( items ) => {
+			return items.reduce( ( commentIds, block ) => {
+				// Check for comment IDs in the current block's attributes
+				if ( block.attributes && block.attributes.blockCommentId ) {
+					commentIds.push( block.attributes.blockCommentId );
+				}
+
+				// Recursively check inner blocks
+				if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
+					const innerCommentIds = extractCommentIds(
+						block.innerBlocks
+					);
+					commentIds.push( ...innerCommentIds );
+				}
+
+				return commentIds;
+			}, [] );
+		};
+
+		// Extract all comment IDs recursively
+		return extractCommentIds( blocks );
+	};
+
 	// Process comments to build the tree structure
-	const resultComments = useMemo( () => {
+	const { resultComments, sortedThreads } = useMemo( () => {
 		// Create a compare to store the references to all objects by id
 		const compare = {};
 		const result = [];
@@ -288,7 +320,18 @@ export default function CollabSidebar() {
 			}
 		} );
 
-		return result;
+		const blockCommentIds = getCommentIdsFromBlocks();
+
+		const uniqueIds = [ ...new Set( blockCommentIds.values() ) ];
+
+		const threadIdMap = new Map(
+			result?.map( ( thread ) => [ thread.id, thread ] )
+		);
+		const sortedComments = uniqueIds
+			.map( ( id ) => threadIdMap.get( id ) )
+			.filter( ( thread ) => thread !== undefined );
+
+		return { resultComments: result, sortedThreads: sortedComments };
 	}, [ threads ] );
 
 	// Get the global styles to set the background color of the sidebar.
@@ -338,7 +381,7 @@ export default function CollabSidebar() {
 				headerClassName="editor-collab-sidebar__header"
 			>
 				<CollabSidebarContent
-					comments={ resultComments }
+					comments={ sortedThreads }
 					showCommentBoard={ showCommentBoard }
 					setShowCommentBoard={ setShowCommentBoard }
 					styles={ {
