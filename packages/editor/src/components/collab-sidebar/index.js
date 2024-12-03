@@ -27,6 +27,7 @@ import { store as editorStore } from '../../store';
 import AddCommentButton from './comment-button';
 import AddCommentToolbarButton from './comment-button-toolbar';
 import { useGlobalStylesContext } from '../global-styles-provider';
+import { getCommentIdsFromBlocks } from './utils';
 
 const isBlockCommentExperimentEnabled =
 	window?.__experimentalEnableBlockComment;
@@ -269,31 +270,6 @@ export default function CollabSidebar() {
 		id: postId,
 	} );
 
-	const getCommentIdsFromBlocks = () => {
-		// Recursive function to extract comment IDs from blocks
-		const extractCommentIds = ( items ) => {
-			return items.reduce( ( commentIds, block ) => {
-				// Check for comment IDs in the current block's attributes
-				if ( block.attributes && block.attributes.blockCommentId ) {
-					commentIds.push( block.attributes.blockCommentId );
-				}
-
-				// Recursively check inner blocks
-				if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
-					const innerCommentIds = extractCommentIds(
-						block.innerBlocks
-					);
-					commentIds.push( ...innerCommentIds );
-				}
-
-				return commentIds;
-			}, [] );
-		};
-
-		// Extract all comment IDs recursively
-		return extractCommentIds( blocks );
-	};
-
 	// Process comments to build the tree structure
 	const { resultComments, sortedThreads } = useMemo( () => {
 		// Create a compare to store the references to all objects by id
@@ -320,19 +296,22 @@ export default function CollabSidebar() {
 			}
 		} );
 
-		const blockCommentIds = getCommentIdsFromBlocks();
+		if ( 0 === result?.length ) {
+			return { resultComments: [], sortedThreads: [] };
+		}
 
-		const uniqueIds = [ ...new Set( blockCommentIds.values() ) ];
+		const blockCommentIds = getCommentIdsFromBlocks( blocks );
 
 		const threadIdMap = new Map(
 			result?.map( ( thread ) => [ thread.id, thread ] )
 		);
-		const sortedComments = uniqueIds
+
+		const sortedComments = blockCommentIds
 			.map( ( id ) => threadIdMap.get( id ) )
 			.filter( ( thread ) => thread !== undefined );
 
 		return { resultComments: result, sortedThreads: sortedComments };
-	}, [ threads ] );
+	}, [ threads, blocks ] );
 
 	// Get the global styles to set the background color of the sidebar.
 	const { merged: GlobalStyles } = useGlobalStylesContext();
