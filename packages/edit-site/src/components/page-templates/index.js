@@ -38,7 +38,7 @@ const EMPTY_ARRAY = [];
 
 const defaultLayouts = {
 	[ LAYOUT_TABLE ]: {
-		mediaField: 'preview',
+		showMedia: false,
 		layout: {
 			styles: {
 				__primary: {
@@ -52,11 +52,11 @@ const defaultLayouts = {
 		},
 	},
 	[ LAYOUT_GRID ]: {
-		mediaField: 'preview',
+		showMedia: true,
 		layout: {},
 	},
 	[ LAYOUT_LIST ]: {
-		mediaField: undefined,
+		showMedia: false,
 		layout: {},
 	},
 };
@@ -72,6 +72,7 @@ const DEFAULT_VIEW = {
 	},
 	titleField: 'title',
 	descriptionField: 'description',
+	mediaField: 'preview',
 	fields: [ 'author' ],
 	filters: [],
 	...defaultLayouts[ LAYOUT_GRID ],
